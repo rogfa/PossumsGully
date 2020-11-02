@@ -17,6 +17,11 @@ firebase-debug.*.log*
 # it commented so all members can deploy to the same project(s) in .firebaserc.
 # .firebaserc
 
+# Ignore the copy of code that is live (public) and the js file that holds
+# the firebase API keys
+public/
+dev/firebase-init.js
+
 # Runtime data
 pids
 *.pid
