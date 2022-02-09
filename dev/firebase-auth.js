@@ -37,7 +37,8 @@ firebase.auth().onAuthStateChanged(function(user) {
     // full name. Make it red if their email has not been verified.
     if (document.getElementById('userName') != null) {
       document.getElementById('userName').innerText = user.displayName;
-      document.getElementById('userName').setAttribute("onclick", "navUserSettings()");
+      document.getElementById('userName').userId = user.uid;
+      document.getElementById('userName').setAttribute("onclick", "window.location.replace('auth-page.html')");
       document.getElementById('userName').style="cursor:pointer";
       document.getElementById('userName').classList.add="w3-dropdown-click";
 
