@@ -1,0 +1,4 @@
+/* Additional stylesheet to be added to pages that might also get printed */
+body { -webkit-print-color-adjust: exact; } /* print background colours */
+.w3-noprint {display: none!important;}  /* hide tags classed as noprint */
+.w3-print-newpage { page-break-before: always; }

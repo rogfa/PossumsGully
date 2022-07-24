@@ -16,6 +16,7 @@ const pgIndex = function() {
   let /** Object */ dbBookingsRef = null; // database reference to current site's bookings
   let /** Object */ dbChecklistsRef = null; // database reference to current site's Checklists
   let /** Object */ dbNotesRef = null; // database reference to current site's notes
+  let /** Object */ dbStoriesRef = null; // database reference to current site's stories list
 
   // in all pages, set a document level lsitener for a click not on a button
   // (because we don't want to process a click on the menu stack button) and, if
@@ -61,6 +62,11 @@ const pgIndex = function() {
     dbBookingsRef = dbRootRef.child('Bookings').child(gSiteId);
     dbChecklistsRef = dbRootRef.child('Checklists').child(gSiteId);
     dbNotesRef = dbRootRef.child('Notes').child(gSiteId);
+    dbStoriesRef = dbRootRef.child('Stories').child(gSiteId);
+
+    // and notify the stories upload modal of the new site id as that becomes
+    // the path for files to be stored under
+    modalUpload.changePath(gSiteId);
 
     // build the calendar for today's month and throws 'built' event when done
     rjhCalendar.buildCalendar( new Date() );
@@ -68,6 +74,7 @@ const pgIndex = function() {
     // enable the buttons
     show('btnAddBooking', 'inline-block');
     show('btnGuestBook', 'inline-block');
+    show('btnStories', 'inline-block');
   }
 
 
@@ -770,10 +777,69 @@ const pgIndex = function() {
 
   }
 
+  // list audio recordings in the Storage area, allowing click to play
+  function modalAudioList() {
+    show('modalAudioList');
+    const /** HTMLElement */ elList = get('modalAudioListGoesHere');
+
+    // get the stories database entries in prefered sequence
+    dbStoriesRef.orderByChild('seq').off(); // so don't create multiple listeners
+    dbStoriesRef.orderByChild('seq').on('child_added', snapStory => {
+      const /** HTMLElement */ elStory = document.createElement('button');
+      elStory.innerHTML = '<div>' + snapStory.val().who + ' on</div>'
+                        + '<div><b>' + snapStory.val().what + '</b></div>'
+                        + '<div class="w3-tiny">talking with ' + snapStory.val().with + '</div>';
+      elStory.id = 'story|' + snapStory.key;
+      // if already on page, remove it so it gets latest from database
+      const /** HTMLElement */ elAlready = get(elStory.id);
+      if (elAlready != null) { elAlready.remove(); }
+
+      // set button with URL for this story and an onclick action to play it
+      elStory.classList = "w3-margin";
+      elStory.url = snapStory.val().URL;
+      elStory.onclick = function() {pgIndex.modalAudioPlay(elStory.id);}
+
+      // add button to the list
+      elList.appendChild( elStory );
+    })
+
+  }
+
+  function modalAudioPlay(elId) {
+    const /** HTMLElement */ elPlayer = get('modalAudioPlayer');
+    const /** HTMLCollection */ elList = get('modalAudioListGoesHere').children;
+
+    // get the button that has been clicked, unhighlight all other buttons
+    // and highlight this one
+
+    for (let i=0; i<elList.length; i++) {
+      elList[i].classList.remove("w3-green");
+    }
+
+    const /** HTMLElement */ elClicked = get(elId);
+    elClicked.classList.add("w3-green");
+
+    // if already playing, pause it... otherwise reset player with this new story
+    // and start playing it.
+    if (elPlayer.src == elClicked.url) {
+      if (elPlayer.paused) {elPlayer.play();} else {elPlayer.pause(); }
+    } else {
+      hide('modalAudioIntro');
+      show('modalAudioPlayer');
+      elPlayer.src = elClicked.url;
+      elPlayer.play();
+    }
+
+    //
+    return false;
+  }
+
 //-----------------------------------------------------------
 // expose wrapped functions that get called from the HTML
 return {modalAddBookingInit: modalAddBookingInit,
         modalAddBookingSave: modalAddBookingSave,
+        modalAudioList: modalAudioList,
+        modalAudioPlay: modalAudioPlay,
         modalModBookingSave: modalModBookingSave,
         modalModBookingBin: modalModBookingBin,
         modalChecklist: modalChecklist,

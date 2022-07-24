@@ -1,6 +1,10 @@
 {
   "rules": {
-    ".read": "auth != null",
-    ".write": "auth != null"
+    "Users": {".read": "auth != null",".write": "auth != null"},
+    "Bookings": {".read": "auth != null",".write": "auth != null"},
+    "Checklists": {".read": "auth != null",".write": "auth != null"},
+    "Notes": {".read": "auth != null",".write": "auth != null"},
+    "Stories": {".read": "auth != null",".write": "auth.uid == 'pOfgLpla77gPzQcTXivvXUkVnHa2'"},
+    "Settings": {".read": "auth != null",".write": "auth.uid == 'pOfgLpla77gPzQcTXivvXUkVnHa2'"},
   }
 }
