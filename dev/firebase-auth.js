@@ -48,13 +48,12 @@ firebase.auth().onAuthStateChanged(function(user) {
       }
     }
 
-    // always load the company details, as they sometimes get used eg to
+    // always load the user details, as they sometimes get used eg to
     // calculate distanace from the office to the site.
     dbRootRef.child('Users').child(user.uid).once('value', snapUser => {
       console.log('got user record');
       if (snapUser.val() == null) { // not registered on app database
-        // Create record so that company admin can add the new user to their
-        // company via the settings page.
+        // Create user record so that person can use the app.
         dbRootRef.child('Users').child(user.uid).set({
           name: user.displayName,
         });

@@ -17,6 +17,7 @@ const pgIndex = function() {
   let /** Object */ dbChecklistsRef = null; // database reference to current site's Checklists
   let /** Object */ dbNotesRef = null; // database reference to current site's notes
   let /** Object */ dbStoriesRef = null; // database reference to current site's stories list
+  const /** Object */ gParams = new URLSearchParams(document.location.search); // get the invoking parameters
 
   // in all pages, set a document level lsitener for a click not on a button
   // (because we don't want to process a click on the menu stack button) and, if
@@ -31,25 +32,38 @@ const pgIndex = function() {
 
   // when the database is connected and the user authorised...
   document.addEventListener("pgUserAuthorised", function(e) {
+    // enable admin options for admin user 
+    if (get('userName').innerText == 'Rod Hawkes') { // TODO admin type user on database
+      show('menuAddSite');
+      console.log('enabling admin menu item');
+    } else {
+      hide('menuAddSite');
+    }
 
     // makes listener for changes to Settings and, for each change, completely
     // resets the global site variables.
     dbRootRef.child('Settings').on('value', snap => {
       gSites = []; // reset the site list
+      gSiteId = null;
+      const /** string */ urlSiteId = gParams.get('siteId');
+      let /** number */ ctr = 0;
       snap.forEach(snapSetting => { // add entry for each site
         let cmd = snapSetting.val();
         cmd.id = snapSetting.key;
         gSites.push( cmd );
+        if (cmd.id == urlSiteId) {gSiteId = cmd.id; gSiteNo = ctr;}
+        ctr++;
       });
 
-      // if no site yet selected...
-      if (gSites.length == 1) { // only one site, that must be the viewed one
-        gSiteNo = 0;
-        gSiteId = gSites[0].id;
-      } else { // multiple sites, prompt for one to view
-        alert('no code to handle multiple sites!!!');
-        gSiteNo = 0;
-        gSiteId = gSites[0].id;
+      if (gSiteId == null) { // if no site specified on URL...
+        if (gSites.length == 1) { // only one site, that must be the viewed one
+          gSiteNo = 0;
+          gSiteId = gSites[0].id;
+        } else { // multiple sites, TODO prompt for one to view
+          console.error('no code to prompt for multiple sites!!!');
+          gSiteNo = 0;
+          gSiteId = gSites[0].id;
+        }
       }
       changeSite();
     });
@@ -59,6 +73,7 @@ const pgIndex = function() {
   function changeSite() {
     console.log('change to site', gSites[gSiteNo])
     set('siteName', gSites[gSiteNo].siteName);
+    document.title = gSites[gSiteNo].siteName;
     dbBookingsRef = dbRootRef.child('Bookings').child(gSiteId);
     dbChecklistsRef = dbRootRef.child('Checklists').child(gSiteId);
     dbNotesRef = dbRootRef.child('Notes').child(gSiteId);
@@ -82,6 +97,7 @@ const pgIndex = function() {
   // when the calendar js signals a rebuilt, repopulate with bookings
   document.addEventListener("rjhCalendarBuilt", function(e) {
     if (dbBookingsRef == null) {return;} // dbase not yet connected
+    console.log('rjhCalendarBuilt');
 
     // empty the page table of bookings
     const /** number */ nRows = get('tBookings').rows.length;
@@ -178,9 +194,9 @@ const pgIndex = function() {
     const /** Date */ date = new Date(snapBooking.val().arriving);
     const /** string */ departing = snapBooking.val().departing;
 
-    let /** boolean */ bVisible = false;
-    //while (date.toISOString().split('T')[0] <= departing) {
-    //  const /** HTMLElement */ el = get(date.toISOString().split('T')[0]);
+    // default the booking listing to whatever the setting is for the site or, if 
+    // there is no setting, to just showing the current month's bookings.
+    let /** boolean */ bVisible = gSites[gSiteNo].showAllBookings || false;
     while (rjhCalendar.getYYYYMMDD(date) <= departing) {
       const /** HTMLElement */ el = get( rjhCalendar.getYYYYMMDD(date) );
       if (el != null) { // this day of the booking is on the visible calendar...
@@ -211,6 +227,10 @@ const pgIndex = function() {
       const /** Date */ arriving = new Date(snapBooking.val().arriving);
       const /** Array<string> */ parts = arriving.toString().split(arriving.getFullYear());
       cArriving.innerText = parts[0].trim();
+      if (gSites[gSiteNo].showAllBookings || false) {
+        cGuests.innerText = cGuests.innerText + ', ' + decodeURIComponent(snapBooking.val().comment);
+        cArriving.innerText = cArriving.innerText + ' ' + arriving.getFullYear();
+      }
 
       const /** Date */ departing = new Date(snapBooking.val().departing);
       const /** number */ days = (departing - arriving) / 1000 / 60 / 60 / 24;
@@ -273,6 +293,7 @@ const pgIndex = function() {
       get('modalModBookingArriving').value = snap.val().arriving;
       get('modalModBookingDeparting').value = snap.val().departing;
       get('modalModBookingComment').value = decodeURIComponent(snap.val().comment);
+      get('modalModBookingDetail').value = decodeURIComponent(snap.val().detail || '');
       get ('modalModBookingBy').innerText = snap.val().by;
       show('modalModBooking');
     });
@@ -286,6 +307,7 @@ const pgIndex = function() {
     const /** Date */ arriving = getDate('modalModBookingArriving');
     const /** Date */ departing = getDate('modalModBookingDeparting');
     const /** string */ comment = get('modalModBookingComment').value;
+    const /** string */ detail = get('modalModBookingDetail').value;
 
     // First, do some sanity checks...
     let /** Array<string> */ msg = [];
@@ -304,6 +326,7 @@ const pgIndex = function() {
       cmd.arriving = get('modalModBookingArriving').value;
       cmd.departing = get('modalModBookingDeparting').value;
       cmd.comment = encodeURIComponent(comment);
+      cmd.detail = encodeURIComponent(detail);
       dbBookingsRef.child(bookingId).update(cmd);
     } catch (err) {
       console.error(err);
@@ -834,10 +857,32 @@ const pgIndex = function() {
     return false;
   }
 
+  //-----------------------  ADMIN FUNCTIONS
+  // pops up modal that allows new site to be added... 
+  function modalAddSite() {
+    show('modalAddSite');
+  }
+
+  function modalAddSiteSave() {
+    // check that have all required info
+    const /** string */ name1 = get('modalAddSiteName1').value;
+    if (name1 == '') {alert('must have a one word name'); return;}
+
+    const /** string */ name2 = get('modalAddSiteName2').value;
+    if (name2 == '') {alert('must have a simple descriptor'); return;}
+    
+    hide('modalAddSite');
+
+    // push new site onto Settings, which will trigger a refresh
+    dbRootRef.child('Settings').push({name: name1, siteName: name2});
+  }
+
 //-----------------------------------------------------------
 // expose wrapped functions that get called from the HTML
 return {modalAddBookingInit: modalAddBookingInit,
         modalAddBookingSave: modalAddBookingSave,
+        modalAddSite: modalAddSite,
+        modalAddSiteSave: modalAddSiteSave,
         modalAudioList: modalAudioList,
         modalAudioPlay: modalAudioPlay,
         modalModBookingSave: modalModBookingSave,

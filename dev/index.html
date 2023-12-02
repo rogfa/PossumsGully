@@ -14,12 +14,13 @@
 <header>
 	<!-- SIDE MENU -->
 	<div class="w3-sidebar w3-bar-block w3-border-right" style="display:none" id="sideMenu">
-	  <button onclick="sideMenuClose()" class="w3-bar-item w3-button w3-large">Close &times;</button>
-	  <a href="#" class="w3-bar-item w3-button" onclick="document.getElementById('modalNotesList').style.display='block'" >Guest Book</a>
-	  <a href="#" class="w3-bar-item w3-button" onclick="pgIndex.modalChecklist('Arriving')">On Arival...</a>
-	  <a href="#" class="w3-bar-item w3-button" onclick="pgIndex.modalChecklist('Departing')">On Departure...</a>
+		<button onclick="sideMenuClose()" class="w3-bar-item w3-button w3-large">Close &times;</button>
+		<a href="#" class="w3-bar-item w3-button" onclick="document.getElementById('modalNotesList').style.display='block'" >Guest Book</a>
+		<a href="#" class="w3-bar-item w3-button" onclick="pgIndex.modalChecklist('Arriving')">On Arival...</a>
+		<a href="#" class="w3-bar-item w3-button" onclick="pgIndex.modalChecklist('Departing')">On Departure...</a>
 		<a href="#" class="w3-bar-item w3-button" onclick="pgIndex.modalAudioList()">Stories...</a>
 		<a href="#" class="w3-bar-item w3-button" onclick="window.location.assign('https://rods-games.web.app/index.html')">GNW...</a>
+		<a href="#" class="w3-bar-item w3-button" onclick="pgIndex.modalAddSite()" id="menuAddSite" style.display="none">Add Site</a>
 	</div>
 	<!-- TOP BAR -->
 	<div class="w3-bar">
@@ -36,10 +37,12 @@
 
 
 	<!-- FIREBASE -->
-	<script src="https://www.gstatic.com/firebasejs/7.22.1/firebase-app.js"></script>
-	<script src="https://www.gstatic.com/firebasejs/7.22.1/firebase-database.js"></script>
-	<script src="https://www.gstatic.com/firebasejs/7.22.1/firebase-auth.js"></script>
-	<script src="https://www.gstatic.com/firebasejs/8.1.2/firebase-storage.js"></script>
+	<!-- using v9.22 so can use AppCheck, but compatability mode as v9 uses modules -->
+	<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+	<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+	<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+	<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-check-compat.js"></script>
 	<script src="firebase-init.js"></script> <!-- initialise the connection to the firebase datastore -->
 	<script defer src="firebase-auth.js"></script> <!-- validate user authorisation and get their company -->
 	<script defer src="modal-upload.js"></script>
@@ -87,9 +90,9 @@
   <div class="w3-modal-content w3-container w3-card-4 w3-animate-opacity">
     <span onclick="document.getElementById('modalModBooking').style.display='none'"
     class="w3-button w3-display-topright">&times;</span>
-    <p>Staying at <span id="modalModBookingSite"></span>!</p>
+    <p>Booking for <span id="modalModBookingSite"></span>!</p>
 		<div class="w3-row">
-			<div class="w3-quarter w3-mobile">Booking for</div>
+			<div class="w3-quarter w3-mobile">People</div>
 			<div class="w3-rest w3-mobile">
 				<input id="modalModBookingGuests" type="text"></input>
 			</div>
@@ -110,6 +113,12 @@
 			<div class="w3-quarter w3-mobile">Note</div>
 			<div class="w3-rest w3-mobile">
 				<input id="modalModBookingComment" type="text" style="width:100%"></input>
+			</div>
+		</div>
+		<div class="w3-row w3-margin-top">
+			<div class="w3-quarter w3-mobile">Detail</div>
+			<div class="w3-rest w3-mobile">
+				<textarea id="modalModBookingDetail" rows=5 cols=30 style="width:100%"></textarea>
 			</div>
 		</div>
 		<div class="w3-row w3-margin-top">
@@ -179,7 +188,7 @@
 				<label>Something to do</label>
 			</div>
 		</div>
-		<textarea id="modalNoteText" rows=5 cols=30></textarea>
+		<textarea id="modalNoteText" rows=5 cols=30 style="width:100%"></textarea>
 		<div class="w3-bar w3-margin-bottom">
 			<button class="pg-btn w3-bar-item w3-margin-left"
 			        onclick="pgIndex.modalNoteSave()" id="modalNoteSAVE">
@@ -215,6 +224,29 @@
 		<div id="modalAudioListGoesHere"></div>
   </div>
 </div>
+
+<div id="modalAddSite" class="w3-modal">
+	<div class="w3-modal-content w3-container w3-card-4 w3-animate-opacity">
+		<span onclick="document.getElementById('modalAddSite').style.display='none'"
+	          class="w3-button w3-display-topright">&times;</span>
+		<p>ADMIN FUNCTION: allows addition of a new site to the app.</p>
+		<div class="w3-row">
+			<div class="w3-quarter w3-mobile">One word name</div>
+			<div class="w3-rest w3-mobile">
+				<input id="modalAddSiteName1" type="text" required></input>
+			</div>
+		</div>
+		<div class="w3-row w3-margin-top">
+			<div class="w3-quarter w3-mobile">lower case full name</div>
+			<div class="w3-rest w3-mobile">
+				<input id="modalAddSiteName2" type="text" required></input>
+			</div>
+		</div>
+		<div class="w3-bar w3-margin-top">
+			<button class="pg-btn" onclick="pgIndex.modalAddSiteSave()">ADD NEW SITE</button>
+		</div>
+	</div>
+  </div>
 <!--------------------------------------------------------->
 <div class="w3-container">
 	<div id="calendar-goes-here"></div>
